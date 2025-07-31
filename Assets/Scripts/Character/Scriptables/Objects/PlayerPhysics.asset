@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19998e90b3942a947a1bb7101b75f755, type: 3}
   m_Name: PlayerPhysics
   m_EditorClassIdentifier: 
+  SuspensionDistance: 1.5
   AccelerationFallOff:
     serializedVersion: 2
     m_Curve:
@@ -49,4 +50,4 @@ MonoBehaviour:
   TopSpeed: -1
   maxSteepnessThreshold: 0.7
   AirResistance: 3
-  Gravity: 800
+  Gravity: 5000

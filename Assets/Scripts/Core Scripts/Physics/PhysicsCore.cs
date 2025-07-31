@@ -51,7 +51,13 @@ namespace Templar.TemplarPhysics
         {
             Vector3[] returnedVectors = SlopeDirectionToVelocity();
             float directionDot = Vector3.Dot(CurrentAcceleration.normalized, returnedVectors[0].normalized);
-            Vector3 forceDirection = Vector3.Lerp(CurrentAcceleration.normalized, returnedVectors[0] * directionDot, 0.99f).normalized;
+            float angle = Vector3.Angle(CurrentAcceleration.normalized, returnedVectors[0].normalized);
+
+            //This is janky and inaccurate af but it sorta works
+            float lerpAmount1 = SharedFunctions.MakePositive(angle - 90) * 7 / 360;
+            float lerpAmount2 = SharedFunctions.MakePositive(angle - 270) * 7 / 360;
+            Debug.Log(lerpAmount1.ToString() + " " + lerpAmount2.ToString());
+            Vector3 forceDirection = Vector3.Lerp(CurrentAcceleration.normalized, returnedVectors[0] * directionDot, lerpAmount1 < lerpAmount2 ? Mathf.Clamp(lerpAmount1, 0, 0.99f) : Mathf.Clamp(lerpAmount2, 0, 0.99f)).normalized;
             DrawRays(returnedVectors[0], forceDirection);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[0]);
         }
@@ -71,7 +77,7 @@ namespace Templar.TemplarPhysics
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.25f));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + 0.04f);
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + (0.04f * Stats.SuspensionDistance));
                 hits.Add(hit);
             }
 
@@ -80,22 +86,22 @@ namespace Templar.TemplarPhysics
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.5f));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + 1f);
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Stats.SuspensionDistance);
                 hits.Add(hit);
             }
 
-            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + 1f);
+            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
             hits.Add(downHit);
 
             surfaceNormal = FindCentrePoint(hits);
             downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
 
-            if (downHit.collider != null && downHit.distance < 1f)
+            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
             {
-                rb.position = downHit.point + new Vector3(0, 1f, 0);
+                rb.AddForce(transform.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
             }
 
-            if (downHit.collider != null && downHit.distance < 1.2f) Grounded = true;
+            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance + 0.2f) Grounded = true;
 
             else Grounded = false;
 

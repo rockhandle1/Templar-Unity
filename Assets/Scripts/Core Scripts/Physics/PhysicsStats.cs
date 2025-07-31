@@ -5,6 +5,8 @@ namespace Templar.TemplarPhysics
     [CreateAssetMenu(fileName = "AccelerationStats", menuName = "Scriptable Objects/AccelerationStats")]
     public class PhysicsStats : ScriptableObject
     {
+        [Header("Suspension")]
+        [SerializeField] public float SuspensionDistance = 5;
         [Header("Acceleration")]
         [SerializeField, Tooltip("How much acceleration should decrease over time")] public AnimationCurve AccelerationFallOff;
         [SerializeField, Tooltip("Think of this as the force at which the object is pushed forward")] public float Acceleration = 100;

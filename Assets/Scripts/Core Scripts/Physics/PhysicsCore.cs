@@ -78,6 +78,15 @@ namespace Templar.TemplarPhysics
                 hits.Add(hit);
             }
 
+            for (int i = 0; i < numberOfRays; i++)
+            {
+                float angle = i * spacing;
+                Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.5f));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + 1f);
+                hits.Add(hit);
+            }
+
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + 1f);
             hits.Add(downHit);
 

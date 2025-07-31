@@ -98,11 +98,11 @@ namespace Templar.TemplarPhysics
                 rb.position = downHit.point + new Vector3(0, 1f, 0);
             }
 
-            if (downHit.distance < 1.2f) _grounded = true;
+            if (downHit.collider != null && downHit.distance < 1.2f) _grounded = true;
 
             else _grounded = false;
 
-            steepness = Vector3.Dot(Vector3.up, downslopeVector.normalized);
+            steepness = -Vector3.Dot(Vector3.up, downslopeVector.normalized);
 
             Vector3[] returnVectors = new Vector3[3];
             returnVectors[0] = downslopeVector;
@@ -126,12 +126,12 @@ namespace Templar.TemplarPhysics
         {
             //Debug.Log(steepness);
             Debug.Log(Vector3.Angle(accelerationDirection, downslope));
-            if (-steepness < Stats.maxSteepnessThreshold || Vector3.Angle(accelerationDirection, downslope) <= 90)
+            if (steepness < Stats.maxSteepnessThreshold || Vector3.Angle(accelerationDirection, downslope) <= 90)
             {
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
 
-            if (-steepness > 0 && CurrentAcceleration.magnitude < 1000 && _grounded)
+            if (steepness > 0.1f && CurrentAcceleration.magnitude < 1000 && _grounded)
             {
                 _gravity = 0;
                 Stats.AirResistance = 3;
@@ -140,7 +140,7 @@ namespace Templar.TemplarPhysics
 
             else
             {
-                _gravity = Stats.Gravity - (Stats.Gravity * (-steepness * 5 / 10));
+                _gravity = Stats.Gravity - (Stats.Gravity * (steepness * 5 / 10));
                 Stats.AirResistance = cachedAirResistance;
             }
 

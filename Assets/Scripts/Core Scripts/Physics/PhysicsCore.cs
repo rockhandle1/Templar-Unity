@@ -126,12 +126,13 @@ namespace Templar.TemplarPhysics
             {
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
+            else _grounded = false;
 
             CurrentVelocity = rb.linearVelocity;
             counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            if (!_grounded || steepness > Stats.maxSteepnessThreshold && angle > 90) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (!_grounded) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);

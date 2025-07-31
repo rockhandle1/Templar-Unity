@@ -61,15 +61,15 @@ namespace Templar.TemplarPhysics
         bool _grounded;
         Vector3[] SlopeDirectionToVelocity()
         {
-            int numberOfRays = 10;
-            float spacing = 180 / numberOfRays;
+            int numberOfRays = 20;
+            float spacing = 180 / (numberOfRays / 2);
             List<Vector3> raycastDirections = new();
             List<RaycastHit> hits = new();
 
             Vector3 downslopeVector;
             Vector3 surfaceNormal;
 
-            for (int i = 0; i < numberOfRays; i++)
+            for (int i = 0; i < numberOfRays / 2; i++)
             {
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
@@ -78,7 +78,7 @@ namespace Templar.TemplarPhysics
                 hits.Add(hit);
             }
 
-            for (int i = 0; i < numberOfRays; i++)
+            for (int i = 0; i < numberOfRays / 2; i++)
             {
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;

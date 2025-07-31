@@ -9,6 +9,8 @@ namespace Templar.TemplarPhysics
         Rigidbody rb;
         Collider col;
         float steepness = 0;
+        public bool Grounded { get; private set; } = true;
+        public bool IsSlipping { get; private set; } = false;
         public Vector3 CurrentVelocity { get; private set; } = new();
 
         Vector3 counterVelocity;
@@ -54,7 +56,6 @@ namespace Templar.TemplarPhysics
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[0]);
         }
 
-        bool _grounded;
         Vector3[] SlopeDirectionToVelocity()
         {
             int numberOfRays = 20;
@@ -94,9 +95,9 @@ namespace Templar.TemplarPhysics
                 rb.position = downHit.point + new Vector3(0, 1f, 0);
             }
 
-            if (downHit.collider != null && downHit.distance < 1.2f) _grounded = true;
+            if (downHit.collider != null && downHit.distance < 1.2f) Grounded = true;
 
-            else _grounded = false;
+            else Grounded = false;
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
@@ -124,15 +125,19 @@ namespace Templar.TemplarPhysics
             float angle = Vector3.Angle(accelerationDirection, downslope);
             if (steepness < Stats.maxSteepnessThreshold || angle <= 90)
             {
+                IsSlipping = false;
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
-            else _grounded = false;
+            else
+            {
+                IsSlipping = true;
+            }
 
             CurrentVelocity = rb.linearVelocity;
-            counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
+            counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (Grounded ? 0 : 1))) * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            if (!_grounded) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (IsSlipping || !Grounded) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);

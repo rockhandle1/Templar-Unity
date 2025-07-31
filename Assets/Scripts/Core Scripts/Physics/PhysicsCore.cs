@@ -9,8 +9,6 @@ namespace Templar.TemplarPhysics
         Rigidbody rb;
         Collider col;
         float steepness = 0;
-        float _gravity;
-        float cachedAirResistance;
         public Vector3 CurrentVelocity { get; private set; } = new();
 
         Vector3 counterVelocity;
@@ -23,8 +21,6 @@ namespace Templar.TemplarPhysics
         void Awake()
         {
             //slowDownFactor = (acceleration * 0.1f / airResistance);
-            cachedAirResistance = Stats.AirResistance;
-            _gravity = Stats.Gravity;
             rb = GetComponent<Rigidbody>();
             col = GetComponent<Collider>();
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
@@ -131,33 +127,11 @@ namespace Templar.TemplarPhysics
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
 
-            if (_grounded)
-            {
-                if(steepness > 0.1f && CurrentAcceleration.magnitude < 1000)
-                {
-                    Stats.AirResistance = 3;
-                }
-
-                else
-                {
-                    _gravity = Stats.Gravity - (Stats.Gravity * (steepness * 5 / 10));
-                    Stats.AirResistance = cachedAirResistance;
-                }
-
-                _gravity = 0;
-            }
-
-            else
-            {
-                _gravity = Stats.Gravity;
-                Stats.AirResistance = cachedAirResistance;
-            }
-
             CurrentVelocity = rb.linearVelocity;
             counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            rb.AddForce(Vector3.down * _gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (!_grounded) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);

@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using Unity.Android.Gradle.Manifest;
 
 namespace Templar.TemplarPhysics
 {
@@ -9,6 +11,8 @@ namespace Templar.TemplarPhysics
         Rigidbody rb;
         Collider col;
         float steepness = 0;
+        float _gravity;
+        float cachedAirResistance;
         public Vector3 CurrentVelocity { get; private set; } = new();
 
         Vector3 counterVelocity;
@@ -21,6 +25,8 @@ namespace Templar.TemplarPhysics
         void Awake()
         {
             //slowDownFactor = (acceleration * 0.1f / airResistance);
+            cachedAirResistance = Stats.AirResistance;
+            _gravity = Stats.Gravity;
             rb = GetComponent<Rigidbody>();
             col = GetComponent<Collider>();
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
@@ -79,6 +85,11 @@ namespace Templar.TemplarPhysics
             surfaceNormal = FindCentrePoint(hits);
             downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
 
+            if (downHit.collider != null && downHit.distance < 0.04f)
+            {
+                rb.position = downHit.point + new Vector3(0, 0.04f, 0);
+            }
+
             steepness = Vector3.Dot(Vector3.up, downslopeVector.normalized);
 
             Vector3[] returnVectors = new Vector3[3];
@@ -105,8 +116,20 @@ namespace Templar.TemplarPhysics
             Debug.Log(Vector3.Angle(accelerationDirection, downslope));
             if (-steepness < Stats.maxSteepnessThreshold || Vector3.Angle(accelerationDirection, downslope) <= 90)
             {
-                CurrentVelocity /= (-steepness + 1) * 10;
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
+            }
+
+            if (-steepness > 0 && CurrentAcceleration.magnitude < 1000)
+            {
+                _gravity = 0;
+                Stats.AirResistance = 3;
+
+            }
+
+            else
+            {
+                _gravity = Stats.Gravity - (Stats.Gravity * (-steepness * 5 / 10));
+                Stats.AirResistance = cachedAirResistance;
             }
 
             CurrentVelocity = rb.linearVelocity;
@@ -114,7 +137,7 @@ namespace Templar.TemplarPhysics
 
             steepness = 0;
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            rb.AddForce(Vector3.down * _gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);

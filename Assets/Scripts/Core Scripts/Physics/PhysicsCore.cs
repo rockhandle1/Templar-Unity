@@ -53,7 +53,7 @@ namespace Templar.TemplarPhysics
         {
             Vector3[] returnedVectors = SlopeDirectionToVelocity();
             float directionDot = Vector3.Dot(CurrentAcceleration.normalized, returnedVectors[0].normalized);
-            Vector3 forceDirection = Vector3.Lerp(CurrentAcceleration.normalized, returnedVectors[0] * directionDot, 0.5f).normalized;
+            Vector3 forceDirection = Vector3.Lerp(CurrentAcceleration.normalized, returnedVectors[0] * directionDot, 0.99f).normalized;
             DrawRays(returnedVectors[0], forceDirection);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[0]);
         }

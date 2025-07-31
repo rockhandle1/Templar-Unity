@@ -1,7 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using Unity.Android.Gradle.Manifest;
 
 namespace Templar.TemplarPhysics
 {
@@ -60,6 +58,7 @@ namespace Templar.TemplarPhysics
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[0]);
         }
 
+        bool _grounded;
         Vector3[] SlopeDirectionToVelocity()
         {
             int numberOfRays = 10;
@@ -87,8 +86,11 @@ namespace Templar.TemplarPhysics
 
             if (downHit.collider != null && downHit.distance < 0.04f)
             {
+                _grounded = true;
                 rb.position = downHit.point + new Vector3(0, 0.04f, 0);
             }
+
+            else _grounded = false;
 
             steepness = Vector3.Dot(Vector3.up, downslopeVector.normalized);
 
@@ -119,7 +121,7 @@ namespace Templar.TemplarPhysics
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
 
-            if (-steepness > 0 && CurrentAcceleration.magnitude < 1000)
+            if (-steepness > 0 && CurrentAcceleration.magnitude < 1000 && _grounded)
             {
                 _gravity = 0;
                 Stats.AirResistance = 3;

@@ -84,11 +84,12 @@ namespace Templar.TemplarPhysics
             surfaceNormal = FindCentrePoint(hits);
             downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
 
-            if (downHit.collider != null && downHit.distance < 0.04f)
+            if (downHit.collider != null && downHit.distance < 1f)
             {
-                _grounded = true;
-                rb.position = downHit.point + new Vector3(0, 0.04f, 0);
+                rb.position = downHit.point + new Vector3(0, 1f, 0);
             }
+
+            if (downHit.distance < 1.2f) _grounded = true;
 
             else _grounded = false;
 

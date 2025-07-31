@@ -40,7 +40,7 @@ namespace Templar.TemplarPhysics
             {
                 if (hit.collider == null) continue;
                 float distance = Vector3.Distance(transform.position, hit.point);
-                float weight = 1 / (distance + 1); // Add 1 to avoid division by zero
+                float weight = 1 / (distance + 1);
 
                 sum += hit.normal * weight;
                 totalWeight += weight;
@@ -102,7 +102,7 @@ namespace Templar.TemplarPhysics
 
             else _grounded = false;
 
-            steepness = -Vector3.Dot(Vector3.up, downslopeVector.normalized);
+            steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
             Vector3[] returnVectors = new Vector3[3];
             returnVectors[0] = downslopeVector;
@@ -131,23 +131,31 @@ namespace Templar.TemplarPhysics
                 rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
             }
 
-            if (steepness > 0.1f && CurrentAcceleration.magnitude < 1000 && _grounded)
+            if (_grounded)
             {
-                _gravity = 0;
-                Stats.AirResistance = 3;
+                if(steepness > 0.1f && CurrentAcceleration.magnitude < 1000)
+                {
+                    Stats.AirResistance = 3;
+                }
 
+                else
+                {
+                    _gravity = Stats.Gravity - (Stats.Gravity * (steepness * 5 / 10));
+                    Stats.AirResistance = cachedAirResistance;
+                }
+
+                _gravity = 0;
             }
 
             else
             {
-                _gravity = Stats.Gravity - (Stats.Gravity * (steepness * 5 / 10));
+                _gravity = Stats.Gravity;
                 Stats.AirResistance = cachedAirResistance;
             }
 
             CurrentVelocity = rb.linearVelocity;
             counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
 
-            steepness = 0;
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
             rb.AddForce(Vector3.down * _gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);

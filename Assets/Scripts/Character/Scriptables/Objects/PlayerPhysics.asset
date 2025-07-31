@@ -45,8 +45,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  Acceleration: 4000
+  Acceleration: 2000
   TopSpeed: -1
   maxSteepnessThreshold: 0.7
-  AirResistance: 13
-  Gravity: 100
+  AirResistance: 3
+  Gravity: 800

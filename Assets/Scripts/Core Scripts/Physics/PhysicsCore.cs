@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Cinemachine;
 
 namespace Templar.TemplarPhysics
 {
@@ -49,28 +50,21 @@ namespace Templar.TemplarPhysics
 
         void FixedUpdate()
         {
-            Vector3[] returnedVectors = SlopeDirectionToVelocity();
-            float directionDot = Vector3.Dot(CurrentAcceleration.normalized, returnedVectors[0].normalized);
-            float angle = Vector3.Angle(CurrentAcceleration.normalized, returnedVectors[0].normalized);
+            Dictionary<ReturnVectors, Vector3> returnedVectors = SlopeDirectionToVelocity();
 
-            //This is janky and inaccurate af but it sorta works
-            float lerpAmount1 = SharedFunctions.MakePositive(angle - 90) * 7 / 360;
-            float lerpAmount2 = SharedFunctions.MakePositive(angle - 270) * 7 / 360;
-            Debug.Log(lerpAmount1.ToString() + " " + lerpAmount2.ToString());
-            Vector3 forceDirection = Vector3.Lerp(CurrentAcceleration.normalized, returnedVectors[0] * directionDot, lerpAmount1 < lerpAmount2 ? Mathf.Clamp(lerpAmount1, 0, 0.99f) : Mathf.Clamp(lerpAmount2, 0, 0.99f)).normalized;
-            DrawRays(returnedVectors[0], forceDirection);
-            VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[0]);
+            Vector3 forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
+            DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
+            VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
         }
 
-        Vector3[] SlopeDirectionToVelocity()
+        Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
         {
             int numberOfRays = 20;
             float spacing = 180 / (numberOfRays / 2);
             List<Vector3> raycastDirections = new();
             List<RaycastHit> hits = new();
 
-            Vector3 downslopeVector;
-            Vector3 surfaceNormal;
+            Vector3 downslopeVector, surfaceNormal;
 
             for (int i = 0; i < numberOfRays / 2; i++)
             {
@@ -98,7 +92,7 @@ namespace Templar.TemplarPhysics
 
             if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
             {
-                rb.AddForce(transform.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
+                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
             }
 
             if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance + 0.2f) Grounded = true;
@@ -107,9 +101,9 @@ namespace Templar.TemplarPhysics
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
-            Vector3[] returnVectors = new Vector3[3];
-            returnVectors[0] = downslopeVector;
-            returnVectors[1] = surfaceNormal;
+            Dictionary<ReturnVectors, Vector3> returnVectors = new();
+            returnVectors[ReturnVectors.downslopeVector] = downslopeVector;
+            returnVectors[ReturnVectors.surfaceNormal] = surfaceNormal;
 
             foreach (Vector3 raycastDirection in raycastDirections)
             {
@@ -147,6 +141,12 @@ namespace Templar.TemplarPhysics
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);
+        }
+
+        private enum ReturnVectors
+        {
+            downslopeVector,
+            surfaceNormal
         }
     }
 }

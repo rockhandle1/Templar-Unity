@@ -9,4 +9,9 @@ public class ExamplePlayer : CameraRelativePlayer
     {
         LeftStick(context.ReadValue<Vector2>());
     }
+
+    protected override void FixedUpdate()
+    {
+        UpdateRotation();
+    }
 }

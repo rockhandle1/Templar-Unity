@@ -4,7 +4,7 @@ using Templar.TemplarPhysics;
 namespace Templar.Player
 {
     [RequireComponent(typeof(PhysicsCore))]
-    public class CameraRelativePlayer : TemplarPlayerInputs
+    public abstract class CameraRelativePlayer : TemplarPlayerInputs
     {
         [SerializeField] float _rotationSpeed;
         PhysicsCore _physics;
@@ -43,9 +43,14 @@ namespace Templar.Player
             //Debug.Log(_physics.CurrentAcceleration.magnitude);
         }
 
-        private void FixedUpdate()
+        protected void UpdateRotation()
         {
             if (_physics.CurrentAcceleration != Vector3.zero) _rb.rotation = Quaternion.Slerp(_rb.rotation, Quaternion.LookRotation(new Vector3(camDirection.normalized.x, 0, camDirection.normalized.z), Vector3.up), _rotationSpeed * (axisAcceleration.magnitude / _physicsStats.Acceleration) * Time.fixedDeltaTime);
+        }
+
+        protected virtual void FixedUpdate()
+        {
+            UpdateRotation();
         }
     }
 }

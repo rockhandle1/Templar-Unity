@@ -1,21 +1,24 @@
 using UnityEngine;
 
-public enum MovementStates
+namespace Templar
 {
-    Slipping,
-    Grounded,
-    Falling
-}
-
-public enum MakePositiveOptions
-{
-    InvertFloatCompared,
-    FloatCompared,
-    InvertFloat
+    public enum MakePositiveOptions
+    {
+        InvertFloatCompared,
+        FloatCompared,
+        InvertFloat
+    }
 }
 
 namespace Templar.TemplarPhysics
 {
+    public enum MovementStates
+    {
+        Slipping,
+        Grounded,
+        Falling
+    }
+
     public partial class PhysicsCore : MonoBehaviour
     {
         private enum ReturnVectors

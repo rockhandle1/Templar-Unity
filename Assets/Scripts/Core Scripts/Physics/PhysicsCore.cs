@@ -24,7 +24,6 @@ namespace Templar.TemplarPhysics
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
-            //slowDownFactor = (acceleration * 0.1f / airResistance);
             rb = GetComponent<Rigidbody>();
             col = GetComponent<Collider>();
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
@@ -66,8 +65,23 @@ namespace Templar.TemplarPhysics
             }
         }
 
+        void UpdateMovementState(List<RaycastHit> hits)
+        {
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f)
+                {
+                    State = MovementStates.Grounded;
+                    break;
+                }
+
+                State = MovementStates.Falling;
+            }
+        }
+
         Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
         {
+            //More rays will give a more accurate slope direction and grounded detection at the cost of performance
             int numberOfRays = 20;
             float spacing = 180 / (numberOfRays / 2);
             List<Vector3> raycastDirections = new();
@@ -87,17 +101,7 @@ namespace Templar.TemplarPhysics
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
             hits.Add(downHit);
 
-            foreach (RaycastHit hit in hits)
-            {
-                if (hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f)
-                {
-                    State = MovementStates.Grounded;
-                    break;
-                }
-
-                State = MovementStates.Falling;
-            }
-
+            UpdateMovementState(hits);
             Suspension(downHit);
 
             for (int i = 0; i < numberOfRays / 2; i++)
@@ -139,14 +143,8 @@ namespace Templar.TemplarPhysics
 
             if (State != MovementStates.Falling)
             {
-                if (steepness < Stats.maxSteepnessThreshold)
-                {
-                    State = MovementStates.Grounded;
-                }
-                else
-                {
-                    State = MovementStates.Slipping;
-                }
+                if (steepness < Stats.maxSteepnessThreshold) State = MovementStates.Grounded;
+                else State = MovementStates.Slipping;
             }
 
             Debug.Log(State);
@@ -156,8 +154,8 @@ namespace Templar.TemplarPhysics
             counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (Grounded ? 0 : 1))) * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            if (State == MovementStates.Slipping) rb.AddForce(downslope.normalized * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
-            if (State == MovementStates.Falling) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (State == MovementStates.Slipping) rb.AddForce(downslope.normalized * Stats.Gravity * 10 * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (State == MovementStates.Falling) rb.AddForce(Vector3.down * Stats.Gravity * 10 * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);

@@ -1,0 +1,14 @@
+{
+    "name": "com.mikyley.templar.movement",
+    "version": "0.0.0",
+    "displayName": "Templar",
+    "description": "A feature complete and modular movement system",
+    "unity": "6000.0",
+    "changelogUrl": "https://github.com/rockhandle1/Templar-Unity/commits/main/",
+    "author": {
+      "name": "Mikyle Yakub",
+      "email": "mikyle.yakub@proton.me",
+      "url": "https://github.com/rockhandle1/Templar-Unity"
+    }
+  }
+  

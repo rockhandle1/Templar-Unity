@@ -5,11 +5,12 @@ using Unity.Cinemachine;
 namespace Templar.TemplarPhysics
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class PhysicsCore : MonoBehaviour
+    public partial class PhysicsCore : MonoBehaviour
     {
         Rigidbody rb;
         Collider col;
         float steepness = 0;
+        public MovementStates State { get; private set; }
         public bool Grounded { get; private set; } = true;
         public bool IsSlipping { get; private set; } = false;
         public Vector3 CurrentVelocity { get; private set; } = new();
@@ -57,6 +58,14 @@ namespace Templar.TemplarPhysics
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
         }
 
+        void Suspension(RaycastHit downHit)
+        {
+            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
+            {
+                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
+            }
+        }
+
         Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
         {
             int numberOfRays = 20;
@@ -68,12 +77,28 @@ namespace Templar.TemplarPhysics
 
             for (int i = 0; i < numberOfRays / 2; i++)
             {
-                float angle = i * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
+                float angle = i * (360 / (numberOfRays / 2));
+                Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.25f));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + (0.04f * Stats.SuspensionDistance));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Stats.SuspensionDistance);
                 hits.Add(hit);
             }
+
+            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
+            hits.Add(downHit);
+
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f)
+                {
+                    State = MovementStates.Grounded;
+                    break;
+                }
+
+                State = MovementStates.Falling;
+            }
+
+            Suspension(downHit);
 
             for (int i = 0; i < numberOfRays / 2; i++)
             {
@@ -84,20 +109,8 @@ namespace Templar.TemplarPhysics
                 hits.Add(hit);
             }
 
-            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
-            hits.Add(downHit);
-
             surfaceNormal = FindCentrePoint(hits);
             downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
-
-            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
-            {
-                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
-            }
-
-            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance + 0.2f) Grounded = true;
-
-            else Grounded = false;
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
@@ -123,31 +136,31 @@ namespace Templar.TemplarPhysics
         {
             //Debug.Log(steepness);
             float angle = Vector3.Angle(accelerationDirection, downslope);
-            if (steepness < Stats.maxSteepnessThreshold)
+
+            if (State != MovementStates.Falling)
             {
-                IsSlipping = false;
-                rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
+                if (steepness < Stats.maxSteepnessThreshold)
+                {
+                    State = MovementStates.Grounded;
+                }
+                else
+                {
+                    State = MovementStates.Slipping;
+                }
             }
-            else
-            {
-                IsSlipping = true;
-            }
+
+            Debug.Log(State);
+            rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
 
             CurrentVelocity = rb.linearVelocity;
             counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (Grounded ? 0 : 1))) * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
-            if (IsSlipping) rb.AddForce(downslope.normalized * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
-            if (!Grounded) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (State == MovementStates.Slipping) rb.AddForce(downslope.normalized * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
+            if (State == MovementStates.Falling) rb.AddForce(Vector3.down * Stats.Gravity * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);
-        }
-
-        private enum ReturnVectors
-        {
-            downslopeVector,
-            surfaceNormal
         }
     }
 }

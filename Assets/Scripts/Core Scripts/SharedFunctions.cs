@@ -1,11 +1,5 @@
 namespace Templar
 {
-    public enum MakePositiveOptions
-    {
-        InvertFloatCompared,
-        FloatCompared,
-        InvertFloat
-    }
     public static class SharedFunctions
     {
         public static float MakePositive(float input, float input2 = 0, MakePositiveOptions options = MakePositiveOptions.InvertFloat)

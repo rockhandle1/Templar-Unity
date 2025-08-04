@@ -11,8 +11,6 @@ namespace Templar.TemplarPhysics
         Collider col;
         float steepness = 0;
         public MovementStates State { get; private set; }
-        public bool Grounded { get; private set; } = true;
-        public bool IsSlipping { get; private set; } = false;
         public Vector3 CurrentVelocity { get; private set; } = new();
 
         Vector3 counterVelocity;
@@ -151,7 +149,7 @@ namespace Templar.TemplarPhysics
             rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
 
             CurrentVelocity = rb.linearVelocity;
-            counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (Grounded ? 0 : 1))) * 1000;
+            counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (State == MovementStates.Falling ? 1 : 0))) * 1000;
 
             rb.AddForce(counterVelocity * deltaTime, ForceMode.Acceleration);
             if (State == MovementStates.Slipping) rb.AddForce(downslope.normalized * Stats.Gravity * 10 * rb.mass * deltaTime, ForceMode.Acceleration);

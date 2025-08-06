@@ -16,6 +16,6 @@ namespace Templar.TemplarPhysics
         [SerializeField, Tooltip("The steepest slope the player can climb\n\n0 is flat ground, 1 is 90 degrees"), Range(0, 1)] public float maxSteepnessThreshold = 0.7f;
         [SerializeField, Tooltip("As speed is gained, air resistance increases, slowing down the player's acceleration. Lower value is more air resistance"), Min(1)] public float AirResistance = 13;
         [SerializeField] public float Gravity = 10;
-        [SerializeField, Range(0, 1)] public float ControlInAir = 0.5f;
+        [SerializeField, Range(0, 1), Tooltip("Allows the player to change the direction of gravity by the specified amount, thereby allowing for some control in the air")] public float ControlInAir = 0.5f;
     }
 }

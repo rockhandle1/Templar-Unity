@@ -150,7 +150,7 @@ namespace Templar.TemplarPhysics
             Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection;
             if (State == MovementStates.Falling)
             {
-                accelerationDirection = Vector3.Lerp(Vector3.down, accelerationDirection, Mathf.Clamp(inputAmount, 0, Stats.ControlInAir)).normalized;
+                accelerationDirection = Vector3.Lerp(Vector3.down, accelerationDirection, inputAmount * Stats.ControlInAir).normalized;
                 Debug.Log(Vector3.Dot(accelerationDirection, Vector3.up));
                 acceleration = (accelerationDirection * Stats.Gravity * 10 * rb.mass / (1 - Vector3.Dot(accelerationDirection, Vector3.up)) * 2);
             }

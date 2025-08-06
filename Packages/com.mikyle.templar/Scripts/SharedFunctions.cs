@@ -1,8 +1,8 @@
 namespace Templar
 {
-    public static class SharedFunctions
+    internal static class SharedFunctions
     {
-        public static float MakePositive(float input, float input2 = 0, MakePositiveOptions options = MakePositiveOptions.InvertFloat)
+        internal static float MakePositive(float input, float input2 = 0, MakePositiveOptions options = MakePositiveOptions.InvertFloat)
         {
             switch (options)
             {

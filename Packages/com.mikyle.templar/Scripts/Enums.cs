@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Templar
 {
-    public enum MakePositiveOptions
+    internal enum MakePositiveOptions
     {
         InvertFloatCompared,
         FloatCompared,

@@ -1,5 +1,19 @@
 {
   "dependencies": {
+    "com.mikyley.templar": {
+      "version": "file:com.mikyle.templar",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.mikyley.templar.movement": {
+      "version": "file:com.mikyley.templar.movement",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.mikyley.templar": "0.0.0"
+      }
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.7",
       "depth": 0,

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Templar.Player;
 
-public class ExamplePlayer : CameraRelativePlayer
+public class ExamplePlayer : Templar_CameraRelativePlayer
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void OnMove(InputAction.CallbackContext context)
@@ -12,6 +12,6 @@ public class ExamplePlayer : CameraRelativePlayer
 
     protected override void FixedUpdate()
     {
-        UpdateRotation();
+        base.FixedUpdate();
     }
 }

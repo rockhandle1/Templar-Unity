@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Templar.Player
 {
-    public abstract class TemplarPlayerInputs : MonoBehaviour
+    public abstract class Templar_PlayerInputs : MonoBehaviour
     {
         [Header("Inputs"), SerializeField] protected float deadzone = 0;
 

@@ -4,7 +4,7 @@ using Templar.TemplarPhysics;
 namespace Templar.Player
 {
     [RequireComponent(typeof(PhysicsCore))]
-    public abstract class CameraRelativePlayer : TemplarPlayerInputs
+    public class Templar_CameraRelativePlayer : Templar_PlayerInputs
     {
         [SerializeField] float _rotationSpeed;
         PhysicsCore _physics;

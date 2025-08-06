@@ -1,7 +1,9 @@
 {
     "name": "com.mikyley.templar.movement",
     "rootNamespace": "Templar",
-    "references": [],
+    "references": [
+        "com.mikyley.templar"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

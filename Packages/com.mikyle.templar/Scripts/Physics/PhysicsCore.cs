@@ -91,7 +91,8 @@ namespace Templar.TemplarPhysics
                 float angle = i * (360 / (numberOfRays / 2));
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.25f));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Stats.SuspensionDistance);
+                //a is 0.25 & b is suspensionDistance
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(0.25f, 2) + Mathf.Pow(Stats.SuspensionDistance, 2)));
                 hits.Add(hit);
             }
 
@@ -106,7 +107,7 @@ namespace Templar.TemplarPhysics
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, 0.5f));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Stats.SuspensionDistance);
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(0.25f, 2) + Mathf.Pow(Stats.SuspensionDistance, 2)));
                 hits.Add(hit);
             }
 

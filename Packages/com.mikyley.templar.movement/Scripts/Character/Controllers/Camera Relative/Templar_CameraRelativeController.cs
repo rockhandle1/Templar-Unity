@@ -25,14 +25,16 @@ namespace Templar.Player
         protected void Movement(Vector2 inputAxis)
         {
             Vector3 v3InputAxis = new Vector3(inputAxis.x, 0, inputAxis.y);
-            camDirection = _mainCam.transform.right * v3InputAxis.x + _mainCam.transform.forward * v3InputAxis.z;
+            camDirection = _mainCam.transform.right * inputAxis.x + _mainCam.transform.forward * inputAxis.y;
             camDirection = camDirection.normalized;
             float camRotation = _mainCam.transform.rotation.y;
-            axisAcceleration = camDirection * _physicsStats.Acceleration * Mathf.Clamp01(v3InputAxis.magnitude);
+            float fallenOffAccel = _physicsStats.Acceleration * Mathf.Clamp01(inputAxis.magnitude) / (1 + (Mathf.Clamp01(inputAxis.magnitude) / _physicsStats.Acceleration * _physicsStats.AccelerationFallOff));
+            Debug.Log(fallenOffAccel);
+            axisAcceleration = camDirection * fallenOffAccel;
             //newAcceleration = new Vector3(axisAcceleration.x / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.z))), 0, axisAcceleration.z / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.x))));
             //float eval = _physicsStats.AccelerationFallOff.Evaluate(axisAcceleration.magnitude / _physicsStats.Acceleration);
             float eval = 1;
-            _physics.CurrentAcceleration = axisAcceleration * eval;
+            _physics.CurrentAcceleration = axisAcceleration;
             //Debug.Log(_physics.CurrentAcceleration.magnitude);
         }
 

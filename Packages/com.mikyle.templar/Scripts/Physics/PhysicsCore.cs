@@ -18,7 +18,6 @@ namespace Templar.TemplarPhysics
 
         [HideInInspector] public Vector3 CurrentAcceleration { get; set; }
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
             rb = GetComponent<Rigidbody>();
@@ -59,7 +58,7 @@ namespace Templar.TemplarPhysics
         {
             if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
             {
-                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * Time.fixedDeltaTime, ForceMode.Acceleration);
+                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * (downHit.distance / Stats.SuspensionDistance) * Time.fixedDeltaTime, ForceMode.Acceleration);
             }
         }
 
@@ -145,10 +144,11 @@ namespace Templar.TemplarPhysics
                 else State = MovementStates.Slipping;
             }
 
-            Debug.Log(State);
+            //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
             Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection;
-            switch(State)
+            float damping = CurrentVelocity.y * -1 / Stats.AirResistance * 1000;
+            switch (State)
             {
                 case MovementStates.Falling:
                     acceleration = (Vector3.down * Stats.Gravity * 10 * rb.mass) + (acceleration * Stats.ControlInAir);
@@ -157,14 +157,18 @@ namespace Templar.TemplarPhysics
                 case MovementStates.Slipping:
                     acceleration += downslope.normalized * Stats.Gravity * 10 * rb.mass;
                     break;
+
+                case MovementStates.Grounded:
+                    damping = CurrentVelocity.y * -1 / 3 * 1000;
+                    break;
             }
 
+            CurrentVelocity = rb.linearVelocity;
             counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
+            //counterVelocity.y = damping;
             //counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (State == MovementStates.Falling || State == MovementStates.Slipping ? 1 : 0))) * 1000;
             rb.AddForce((acceleration + counterVelocity) * deltaTime, ForceMode.Acceleration);
             //rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);
-
-            CurrentVelocity = rb.linearVelocity;
 
             //if (State == MovementStates.Falling) rb.AddForce(Vector3.down * Stats.Gravity * 10 * rb.mass * deltaTime, ForceMode.Acceleration);
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);

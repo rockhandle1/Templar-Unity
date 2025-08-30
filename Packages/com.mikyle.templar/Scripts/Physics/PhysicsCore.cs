@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Templar.TemplarPhysics
 {
@@ -11,6 +12,7 @@ namespace Templar.TemplarPhysics
         float steepness = 0;
         public MovementStates State { get; private set; }
         public Vector3 CurrentVelocity { get; private set; } = new();
+        public List<RaycastHit> CurrentFooting {  get; private set; }
 
         Vector3 counterVelocity;
 
@@ -51,6 +53,7 @@ namespace Templar.TemplarPhysics
 
             Vector3 forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
             DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
+            UpdateMovementState(CurrentFooting);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
         }
 
@@ -58,22 +61,33 @@ namespace Templar.TemplarPhysics
         {
             if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
             {
-                rb.AddForce(Vector3.up * Stats.SuspensionDistance * 1000 * (downHit.distance / Stats.SuspensionDistance) * Time.fixedDeltaTime, ForceMode.Acceleration);
+                rb.AddForce(Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 50, ForceMode.Acceleration);
             }
         }
 
+        float slipTimer = 0;
         void UpdateMovementState(List<RaycastHit> hits)
         {
-            foreach (RaycastHit hit in hits)
+            if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < 0.5f))
             {
-                if (hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f)
-                {
-                    State = MovementStates.Grounded;
-                    break;
-                }
-
-                State = MovementStates.Falling;
+                slipTimer += Time.fixedDeltaTime;
+                return;
             }
+            else
+            {
+                slipTimer = 0;
+            }
+
+            if (steepness < Stats.maxSteepnessThreshold) State = MovementStates.Grounded;
+            else
+            {
+                State = MovementStates.Slipping;
+                return;
+            }
+
+            bool hasCloseHit = hits.Any(hit => hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f);
+
+            State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
         }
 
         Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
@@ -93,6 +107,8 @@ namespace Templar.TemplarPhysics
                 float angle = i * (360 / (numberOfRays / 2));
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle1));
+
+                //Yes, it is intentionally slightly longer than it needs to be to touch a flat ground. why? because sometimes it needs to touch a slope
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle1 * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2)));
                 hits.Add(hit);
             }
@@ -100,7 +116,7 @@ namespace Templar.TemplarPhysics
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
             hits.Add(downHit);
 
-            UpdateMovementState(hits);
+            CurrentFooting = hits;
             Suspension(downHit);
 
             for (int i = 0; i < numberOfRays / 2; i++)
@@ -123,7 +139,7 @@ namespace Templar.TemplarPhysics
 
             foreach (Vector3 raycastDirection in raycastDirections)
             {
-                Debug.DrawRay(rb.position, raycastDirection * 5, Color.yellow);
+                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle1 * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 
             return returnVectors;
@@ -138,14 +154,6 @@ namespace Templar.TemplarPhysics
         void VelocityUpdate(float deltaTime, Vector3 accelerationDirection, Vector3 downslope)
         {
             //Debug.Log(steepness);
-            float angle = Vector3.Angle(accelerationDirection, downslope);
-
-            if (State != MovementStates.Falling)
-            {
-                if (steepness < Stats.maxSteepnessThreshold) State = MovementStates.Grounded;
-                else State = MovementStates.Slipping;
-            }
-
             //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
             Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection;
@@ -161,13 +169,13 @@ namespace Templar.TemplarPhysics
                     break;
 
                 case MovementStates.Grounded:
-                    damping = CurrentVelocity.y * -1 / 3 * 1000;
+                    damping = CurrentVelocity.y * -1 / 1.5f * 1000;
                     break;
             }
 
             CurrentVelocity = rb.linearVelocity;
-            counterVelocity = CurrentVelocity * -1 / Stats.AirResistance * 1000;
-            //counterVelocity.y = damping;
+            counterVelocity = -CurrentVelocity / Stats.AirResistance * 1000;
+            counterVelocity.y = damping;
             //counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (State == MovementStates.Falling || State == MovementStates.Slipping ? 1 : 0))) * 1000;
             rb.AddForce((acceleration + counterVelocity) * deltaTime, ForceMode.Acceleration);
             //rb.AddForce(CurrentAcceleration.magnitude * accelerationDirection * deltaTime, ForceMode.Acceleration);

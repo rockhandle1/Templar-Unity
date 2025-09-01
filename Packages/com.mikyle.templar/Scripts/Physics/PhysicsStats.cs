@@ -13,7 +13,7 @@ namespace Templar.TemplarPhysics
 
         [Header("Counter Forces & Limiters")]
         [SerializeField, Tooltip("Will only reach top speed if there is enough acceleration to overcome the air resistance. Set to -1 to disable")] public float TopSpeed = -1;
-        [SerializeField, Tooltip("The steepest slope the player can climb\n\n0 is flat ground, 1 is 90 degrees"), Range(0, 1)] public float maxSteepnessThreshold = 0.7f;
+        [SerializeField, Tooltip("The steepest slope the player can climb\n\n0 is flat ground, 1 is 90 degrees"), Range(0, 0.94f)] public float maxSteepnessThreshold = 0.7f;
         [SerializeField, Tooltip("As speed is gained, air resistance increases, slowing down the player's acceleration. Lower value is more air resistance"), Min(1)] public float AirResistance = 13;
         [SerializeField] public float Gravity = 10;
         [SerializeField, Tooltip("Allows the player to move around in the air at a fraction of it's original speed"), Min(0)] public float ControlInAir = 0.5f;

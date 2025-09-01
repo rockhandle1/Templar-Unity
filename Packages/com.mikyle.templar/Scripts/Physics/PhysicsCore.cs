@@ -26,7 +26,7 @@ namespace Templar.TemplarPhysics
             col = GetComponent<Collider>();
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
             if (Stats == null) throw new System.NullReferenceException("No physics stats provided");
-            if (Stats.TopSpeed > -1) rb.maxLinearVelocity = Stats.TopSpeed;
+            if (Stats.TopSpeed > 0) rb.maxLinearVelocity = Stats.TopSpeed;
         }
 
         Vector3 FindCentrePoint(List<RaycastHit> hits)
@@ -36,7 +36,8 @@ namespace Templar.TemplarPhysics
 
             foreach (RaycastHit hit in hits)
             {
-                if (hit.collider == null) continue;
+                if (hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f) continue;
+
                 float distance = Vector3.Distance(transform.position, hit.point);
                 float weight = 1 / (distance + 1);
 
@@ -73,13 +74,10 @@ namespace Templar.TemplarPhysics
                 slipTimer += Time.fixedDeltaTime;
                 return;
             }
-            else
-            {
-                slipTimer = 0;
-            }
 
-            if (steepness < Stats.maxSteepnessThreshold) State = MovementStates.Grounded;
-            else
+            slipTimer = 0;
+
+            if (steepness > Stats.maxSteepnessThreshold)
             {
                 State = MovementStates.Slipping;
                 return;
@@ -90,26 +88,33 @@ namespace Templar.TemplarPhysics
             State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
         }
 
+        float CalculateRayLength(float angle)
+        {
+            //Yes, it is intentionally slightly longer than it needs to be to touch a flat ground. why? because sometimes it needs to touch a slope
+            return col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(angle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2));
+        }
+
         Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
         {
             //More rays will give a more accurate slope direction and grounded detection at the cost of performance
-            int numberOfRays = 20;
-            float spacing = 180 / (numberOfRays / 2);
+            int numberOfRays = 10;
+            int numberOfOuterRays = 4;
             List<Vector3> raycastDirections = new();
             List<RaycastHit> hits = new();
+            float spacing = 180 / numberOfOuterRays;
 
             Vector3 downslopeVector, surfaceNormal;
-            float raycastAngle1 = 0.25f;
-            float raycastAngle2 = 0.5f;
 
-            for (int i = 0; i < numberOfRays / 2; i++)
+            //Angles as a percentage of 90 degrees
+            float raycastAngle = 0.25f;
+            float outerRaycastAngle = 0.5f;
+
+            for (int i = 0; i < numberOfRays; i++)
             {
-                float angle = i * (360 / (numberOfRays / 2));
+                float angle = i * (360 / numberOfRays);
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle1));
-
-                //Yes, it is intentionally slightly longer than it needs to be to touch a flat ground. why? because sometimes it needs to touch a slope
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle1 * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2)));
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(raycastAngle));
                 hits.Add(hit);
             }
 
@@ -119,12 +124,19 @@ namespace Templar.TemplarPhysics
             CurrentFooting = hits;
             Suspension(downHit);
 
-            for (int i = 0; i < numberOfRays / 2; i++)
+            foreach (Vector3 raycastDirection in raycastDirections)
+            {
+                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
+            }
+
+            raycastDirections.Clear();
+
+            for (int i = 0; i < numberOfOuterRays; i++)
             {
                 float angle = i * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle - 90, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle2));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle2 * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2)));
+                Vector3 direction = Quaternion.Euler(0, angle - 70, 0) * transform.forward;
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(outerRaycastAngle));
                 hits.Add(hit);
             }
 
@@ -139,7 +151,7 @@ namespace Templar.TemplarPhysics
 
             foreach (Vector3 raycastDirection in raycastDirections)
             {
-                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle1 * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
+                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 
             return returnVectors;

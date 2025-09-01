@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3006d2a7e03e75d43b2158ebe8704bf8, type: 3}
   m_Name: PlayerPhysics
   m_EditorClassIdentifier: 
-  SuspensionDistance: 1.6
+  SuspensionDistance: 1
   AccelerationFallOff: 0
   Acceleration: 3000
   TopSpeed: -1

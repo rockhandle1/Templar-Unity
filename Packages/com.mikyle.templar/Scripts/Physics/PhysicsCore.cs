@@ -8,7 +8,7 @@ namespace Templar.TemplarPhysics
     public partial class PhysicsCore : MonoBehaviour
     {
         Rigidbody rb;
-        Collider col;
+        [SerializeField, Tooltip("A non trigger collider that is used for collisions"), InspectorName("Collider")] Collider col;
         float steepness = 0;
         public MovementStates State { get; private set; }
         public Vector3 CurrentVelocity { get; private set; } = new();
@@ -23,7 +23,8 @@ namespace Templar.TemplarPhysics
         void Awake()
         {
             rb = GetComponent<Rigidbody>();
-            col = GetComponent<Collider>();
+
+            if (col == null || col.isTrigger) throw new System.NullReferenceException("No physics collider found. Please ensure a non trigger collider is attached to the gameobject");
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
             if (Stats == null) throw new System.NullReferenceException("No physics stats provided");
             if (Stats.TopSpeed > 0) rb.maxLinearVelocity = Stats.TopSpeed;

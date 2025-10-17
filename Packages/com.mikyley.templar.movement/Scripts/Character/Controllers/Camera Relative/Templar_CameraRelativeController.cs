@@ -29,7 +29,7 @@ namespace Templar.Player
             camDirection = camDirection.normalized;
             float camRotation = _mainCam.transform.rotation.y;
             float fallenOffAccel = _physicsStats.Acceleration * Mathf.Clamp01(inputAxis.magnitude) / (1 + (Mathf.Clamp01(inputAxis.magnitude) / _physicsStats.Acceleration * _physicsStats.AccelerationFallOff));
-            Debug.Log(fallenOffAccel);
+            //Debug.Log(fallenOffAccel);
             axisAcceleration = camDirection * fallenOffAccel;
             //newAcceleration = new Vector3(axisAcceleration.x / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.z))), 0, axisAcceleration.z / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.x))));
             //float eval = _physicsStats.AccelerationFallOff.Evaluate(axisAcceleration.magnitude / _physicsStats.Acceleration);

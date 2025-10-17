@@ -51,15 +51,21 @@ namespace Templar.TemplarPhysics
         }
 
         Vector3 forceDirection;
+        Vector3 unadjustedForceDirection;
         Dictionary<ReturnVectors, Vector3> returnedVectors;
         void FixedUpdate()
         {
             returnedVectors = SlopeDirectionToVelocity();
 
-            forceDirection = Vector3.Lerp(Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]), -returnedVectors[ReturnVectors.surfaceNormal].normalized, 0.25f);
+            unadjustedForceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
+            forceDirection = Vector3.Lerp(unadjustedForceDirection, -returnedVectors[ReturnVectors.surfaceNormal].normalized, 0.25f);
+
+#if UNITY_EDITOR
             DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
+#endif
             UpdateMovementState(CurrentFooting);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
+            Debug.Log(rb.linearVelocity.magnitude);
         }
 
         void Suspension(RaycastHit downHit)
@@ -74,22 +80,26 @@ namespace Templar.TemplarPhysics
         float slipTimer = 0;
         void UpdateMovementState(List<RaycastHit> hits)
         {
-            if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < 0.5f))
+            bool hasCloseHit = hits.Any(hit => hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f);
+
+            if (hasCloseHit)
             {
-                slipTimer += Time.fixedDeltaTime;
-                return;
+                if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < 0.5f))
+                {
+                    slipTimer += Time.fixedDeltaTime;
+                    return;
+                }
+
+                slipTimer = 0;
+
+                if (steepness > Stats.maxSteepnessThreshold)
+                {
+                    State = MovementStates.Slipping;
+                    return;
+                }
             }
 
             slipTimer = 0;
-
-            if (steepness > Stats.maxSteepnessThreshold)
-            {
-                State = MovementStates.Slipping;
-                return;
-            }
-
-            bool hasCloseHit = hits.Any(hit => hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f);
-
             State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
         }
 
@@ -129,10 +139,12 @@ namespace Templar.TemplarPhysics
             CurrentFooting = hits;
             Suspension(downHit);
 
+#if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)
             {
                 Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
+#endif
 
             for (int i = numberOfRays; i < numberOfRays + numberOfOuterRays; i++)
             {
@@ -152,10 +164,12 @@ namespace Templar.TemplarPhysics
             returnVectors[ReturnVectors.downslopeVector] = downslopeVector;
             returnVectors[ReturnVectors.surfaceNormal] = surfaceNormal;
 
+#if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)
             {
                 Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
+#endif
 
             return returnVectors;
         }
@@ -171,7 +185,7 @@ namespace Templar.TemplarPhysics
             //Debug.Log(steepness);
             //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
-            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection * (2 - (Vector3.Dot(returnedVectors[ReturnVectors.surfaceNormal], Vector3.up) / 2));
+            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection * (2 - ((Vector3.Dot(accelerationDirection, unadjustedForceDirection)) / 2));
             float damping = CurrentVelocity.y * -1 / Stats.AirResistance * 1000;
             switch (State)
             {

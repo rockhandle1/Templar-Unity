@@ -61,11 +61,11 @@ namespace Templar.TemplarPhysics
 
         Vector3 forceDirection;
         Vector3 unadjustedForceDirection;
-        Dictionary<ReturnVectors, Vector3> returnedVectors;
+        Dictionary<ReturnVectors, Vector3> returnedVectors = new();
         void FixedUpdate()
         {
-            returnedVectors = SlopeDirectionToVelocity();
-
+            returnedVectors.Clear();
+            SlopeDirectionToVelocity();
             unadjustedForceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
             forceDirection = Vector3.Lerp(unadjustedForceDirection, -returnedVectors[ReturnVectors.surfaceNormal].normalized, 0.25f);
 
@@ -124,10 +124,12 @@ namespace Templar.TemplarPhysics
         private const int numberOfRays = 10;
         private const int numberOfOuterRays = 4;
         private const float spacing = 180 / numberOfOuterRays;
-        Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
+        void SlopeDirectionToVelocity()
         {
             Vector3 downslopeVector, surfaceNormal;
 
+            raycastDirections.Clear();
+            hits.Clear();
             for (int i = 0; i < numberOfRays; i++)
             {
                 float angle = i * (360 / numberOfRays);
@@ -156,9 +158,9 @@ namespace Templar.TemplarPhysics
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
-            Dictionary<ReturnVectors, Vector3> returnVectors = new();
-            returnVectors[ReturnVectors.downslopeVector] = downslopeVector;
-            returnVectors[ReturnVectors.surfaceNormal] = surfaceNormal;
+            
+            returnedVectors[ReturnVectors.downslopeVector] = downslopeVector;
+            returnedVectors[ReturnVectors.surfaceNormal] = surfaceNormal;
 
 #if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)
@@ -166,9 +168,6 @@ namespace Templar.TemplarPhysics
                 Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 #endif
-
-            raycastDirections.Clear();
-            return returnVectors;
         }
 
         void DrawRays(Vector3 downslopeVector, Vector3 forceDirection)
@@ -211,11 +210,6 @@ namespace Templar.TemplarPhysics
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);
-        }
-
-        private void LateUpdate()
-        {
-            hits.Clear();
         }
     }
 }

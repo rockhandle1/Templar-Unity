@@ -12,7 +12,7 @@ namespace Templar.TemplarPhysics
         float steepness = 0;
         public MovementStates State { get; private set; }
         public Vector3 CurrentVelocity { get; private set; } = new();
-        public List<RaycastHit> CurrentFooting => hits;
+        public IReadOnlyList<RaycastHit> CurrentFooting => hits;
 
         Vector3 counterVelocity;
 
@@ -87,7 +87,7 @@ namespace Templar.TemplarPhysics
         }
 
         float slipTimer = 0;
-        void UpdateMovementState(List<RaycastHit> hits)
+        void UpdateMovementState(IReadOnlyList<RaycastHit> hits)
         {
             bool hasCloseHit = hits.Any(hit => hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f);
 

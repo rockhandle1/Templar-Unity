@@ -99,15 +99,7 @@ namespace Templar.TemplarPhysics
                 }
             }
 
-            else
-            {
-                State = MovementStates.Falling;
-                slipTimer = 0;
-                return;
-            }
-
-            slipTimer = 0;
-            State = MovementStates.Grounded;
+            State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
         }
 
         float CalculateRayLength(float angle)
@@ -136,11 +128,11 @@ namespace Templar.TemplarPhysics
                 float angle = i * (360 / numberOfRays);
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(raycastAngle));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(raycastAngle), ~0, QueryTriggerInteraction.Ignore);
                 hits.Add(hit);
             }
 
-            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance);
+            Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance, 0, QueryTriggerInteraction.Ignore);
             hits.Add(downHit);
 
             CurrentFooting = hits;
@@ -158,7 +150,7 @@ namespace Templar.TemplarPhysics
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(outerRaycastAngle));
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(outerRaycastAngle), ~0, QueryTriggerInteraction.Ignore);
                 hits.Add(hit);
             }
 

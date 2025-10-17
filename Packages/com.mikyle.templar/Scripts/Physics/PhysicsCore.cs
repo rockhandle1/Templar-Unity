@@ -37,6 +37,7 @@ namespace Templar.TemplarPhysics
 
             foreach (RaycastHit hit in hits)
             {
+                //Reject vector if it is a wall. Fixes player being able to climb walls
                 if (hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f) continue;
 
                 float distance = Vector3.Distance(transform.position, hit.point);
@@ -49,11 +50,13 @@ namespace Templar.TemplarPhysics
             return totalWeight > 0 ? sum / totalWeight : Vector3.zero;
         }
 
+        Vector3 forceDirection;
+        Dictionary<ReturnVectors, Vector3> returnedVectors;
         void FixedUpdate()
         {
-            Dictionary<ReturnVectors, Vector3> returnedVectors = SlopeDirectionToVelocity();
+            returnedVectors = SlopeDirectionToVelocity();
 
-            Vector3 forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
+            forceDirection = Vector3.Lerp(Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]), -returnedVectors[ReturnVectors.surfaceNormal].normalized, 0.25f);
             DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
             UpdateMovementState(CurrentFooting);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
@@ -61,9 +64,10 @@ namespace Templar.TemplarPhysics
 
         void Suspension(RaycastHit downHit)
         {
-            if (downHit.collider != null && downHit.distance < Stats.SuspensionDistance)
+            if (downHit.distance < Stats.SuspensionDistance)
             {
-                rb.AddForce(Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 50, ForceMode.Acceleration);
+                rb.linearVelocity += Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 2;
+                //rb.AddForce(Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 50, ForceMode.Acceleration);
             }
         }
 
@@ -130,12 +134,10 @@ namespace Templar.TemplarPhysics
                 Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 
-            raycastDirections.Clear();
-
-            for (int i = 0; i < numberOfOuterRays; i++)
+            for (int i = numberOfRays; i < numberOfRays + numberOfOuterRays; i++)
             {
                 float angle = i * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle - 70, 0) * transform.forward;
+                Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(outerRaycastAngle));
                 hits.Add(hit);
@@ -169,7 +171,7 @@ namespace Templar.TemplarPhysics
             //Debug.Log(steepness);
             //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
-            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection;
+            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection * (2 - (Vector3.Dot(returnedVectors[ReturnVectors.surfaceNormal], Vector3.up) / 2));
             float damping = CurrentVelocity.y * -1 / Stats.AirResistance * 1000;
             switch (State)
             {
@@ -183,6 +185,7 @@ namespace Templar.TemplarPhysics
 
                 case MovementStates.Grounded:
                     damping = CurrentVelocity.y * -1 / 1.5f * 1000;
+                    //acceleration += (-returnedVectors[ReturnVectors.surfaceNormal].normalized * Stats.Gravity * rb.mass);
                     break;
             }
 

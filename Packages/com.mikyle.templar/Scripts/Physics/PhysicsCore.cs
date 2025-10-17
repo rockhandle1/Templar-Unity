@@ -99,8 +99,15 @@ namespace Templar.TemplarPhysics
                 }
             }
 
+            else
+            {
+                State = MovementStates.Falling;
+                slipTimer = 0;
+                return;
+            }
+
             slipTimer = 0;
-            State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
+            State = MovementStates.Grounded;
         }
 
         float CalculateRayLength(float angle)

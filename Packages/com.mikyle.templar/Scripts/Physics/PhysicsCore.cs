@@ -12,13 +12,19 @@ namespace Templar.TemplarPhysics
         float steepness = 0;
         public MovementStates State { get; private set; }
         public Vector3 CurrentVelocity { get; private set; } = new();
-        public List<RaycastHit> CurrentFooting {  get; private set; }
+        public List<RaycastHit> CurrentFooting => hits;
 
         Vector3 counterVelocity;
 
         [SerializeField] public PhysicsStats Stats;
 
         [HideInInspector] public Vector3 CurrentAcceleration { get; set; }
+
+        private float slopeRaycastsL1, slopeRaycastsL2;
+
+        //Angles as a percentage of 90 degrees
+        const float raycastAngle = 0.25f;
+        const float outerRaycastAngle = 0.5f;
 
         void Awake()
         {
@@ -28,6 +34,9 @@ namespace Templar.TemplarPhysics
             if (rb == null) throw new System.NullReferenceException("Rigidbody is null");
             if (Stats == null) throw new System.NullReferenceException("No physics stats provided");
             if (Stats.TopSpeed > 0) rb.maxLinearVelocity = Stats.TopSpeed;
+
+            slopeRaycastsL1 = CalculateRayLength(raycastAngle);
+            slopeRaycastsL2 = CalculateRayLength(outerRaycastAngle);
         }
 
         Vector3 FindCentrePoint(List<RaycastHit> hits)
@@ -108,49 +117,37 @@ namespace Templar.TemplarPhysics
             return col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(angle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2));
         }
 
+        private readonly List<Vector3> raycastDirections = new();
+        private readonly List<RaycastHit> hits = new();
+
+        //More rays will give a more accurate slope direction and grounded detection at the cost of performance
+        private const int numberOfRays = 10;
+        private const int numberOfOuterRays = 4;
+        private const float spacing = 180 / numberOfOuterRays;
         Dictionary<ReturnVectors, Vector3> SlopeDirectionToVelocity()
         {
-            //More rays will give a more accurate slope direction and grounded detection at the cost of performance
-            int numberOfRays = 10;
-            int numberOfOuterRays = 4;
-            List<Vector3> raycastDirections = new();
-            List<RaycastHit> hits = new();
-            float spacing = 180 / numberOfOuterRays;
-
             Vector3 downslopeVector, surfaceNormal;
-
-            //Angles as a percentage of 90 degrees
-            float raycastAngle = 0.25f;
-            float outerRaycastAngle = 0.5f;
 
             for (int i = 0; i < numberOfRays; i++)
             {
                 float angle = i * (360 / numberOfRays);
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(raycastAngle), ~0, QueryTriggerInteraction.Ignore);
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL1, ~0, QueryTriggerInteraction.Ignore);
                 hits.Add(hit);
             }
 
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance, 0, QueryTriggerInteraction.Ignore);
             hits.Add(downHit);
 
-            CurrentFooting = hits;
             Suspension(downHit);
-
-#if UNITY_EDITOR
-            foreach (Vector3 raycastDirection in raycastDirections)
-            {
-                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
-            }
-#endif
 
             for (int i = numberOfRays; i < numberOfRays + numberOfOuterRays; i++)
             {
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, CalculateRayLength(outerRaycastAngle), ~0, QueryTriggerInteraction.Ignore);
+                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, ~0, QueryTriggerInteraction.Ignore);
                 hits.Add(hit);
             }
 
@@ -170,6 +167,7 @@ namespace Templar.TemplarPhysics
             }
 #endif
 
+            raycastDirections.Clear();
             return returnVectors;
         }
 
@@ -213,6 +211,11 @@ namespace Templar.TemplarPhysics
             if (Mathf.Min(new Vector2(CurrentVelocity.x, CurrentVelocity.z).magnitude, 0.01f) < 0.01f) rb.linearVelocity = new Vector3(0, CurrentVelocity.y, 0);
             //Debug.Log(counterVelocity * deltaTime);
             //Debug.Log(currentVelocity);
+        }
+
+        private void LateUpdate()
+        {
+            hits.Clear();
         }
     }
 }

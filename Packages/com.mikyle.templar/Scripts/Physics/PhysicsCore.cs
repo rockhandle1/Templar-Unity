@@ -47,7 +47,7 @@ namespace Templar.TemplarPhysics
             foreach (RaycastHit hit in hits)
             {
                 //Reject vector if it is a wall. Fixes player being able to climb walls
-                if (hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f) continue;
+                if (Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f) continue;
 
                 float distance = Vector3.Distance(transform.position, hit.point);
                 float weight = 1 / (distance + 1);
@@ -89,7 +89,7 @@ namespace Templar.TemplarPhysics
         float slipTimer = 0;
         void UpdateMovementState(IReadOnlyList<RaycastHit> hits)
         {
-            bool hasCloseHit = hits.Any(hit => hit.collider != null && hit.distance < Stats.SuspensionDistance + 0.2f);
+            bool hasCloseHit = hits.Any(hit => hit.distance < Stats.SuspensionDistance + 0.2f);
 
             if (hasCloseHit)
             {
@@ -136,11 +136,12 @@ namespace Templar.TemplarPhysics
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL1, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
+                if (hit.collider == null) continue;
                 hits.Add(hit);
             }
 
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
-            hits.Add(downHit);
+            if (downHit.collider != null) hits.Add(downHit);
 
             Suspension(downHit);
 
@@ -150,6 +151,7 @@ namespace Templar.TemplarPhysics
                 Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
+                if (hit.collider == null) continue;
                 hits.Add(hit);
             }
 

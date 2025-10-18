@@ -33,7 +33,6 @@ namespace Templar.Player
             axisAcceleration = camDirection * fallenOffAccel;
             //newAcceleration = new Vector3(axisAcceleration.x / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.z))), 0, axisAcceleration.z / (1 + Mathf.Clamp01(SharedFunctions.MakePositive(inputAxis.x))));
             //float eval = _physicsStats.AccelerationFallOff.Evaluate(axisAcceleration.magnitude / _physicsStats.Acceleration);
-            float eval = 1;
             _physics.CurrentAcceleration = axisAcceleration;
             //Debug.Log(_physics.CurrentAcceleration.magnitude);
         }

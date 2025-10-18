@@ -188,11 +188,11 @@ namespace Templar.TemplarPhysics
             switch (State)
             {
                 case MovementStates.Falling:
-                    acceleration = (Vector3.down * Stats.Gravity * 10 * rb.mass) + (acceleration * Stats.ControlInAir);
+                    acceleration = (Vector3.down * Stats.Gravity * 10) + (acceleration * Stats.ControlInAir);
                     break;
 
                 case MovementStates.Slipping:
-                    acceleration += downslope.normalized * Stats.Gravity * 10 * rb.mass;
+                    acceleration += downslope.normalized * Stats.Gravity * 10;
                     break;
 
                 case MovementStates.Grounded:

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 
 namespace Templar.TemplarPhysics
 {
@@ -22,10 +23,6 @@ namespace Templar.TemplarPhysics
 
         private float slopeRaycastsL1, slopeRaycastsL2;
 
-        //Angles as a percentage of 90 degrees
-        const float raycastAngle = 0.25f;
-        const float outerRaycastAngle = 0.5f;
-
         void Awake()
         {
             rb = GetComponent<Rigidbody>();
@@ -35,8 +32,8 @@ namespace Templar.TemplarPhysics
             if (Stats == null) throw new System.NullReferenceException("No physics stats provided");
             if (Stats.TopSpeed > 0) rb.maxLinearVelocity = Stats.TopSpeed;
 
-            slopeRaycastsL1 = CalculateRayLength(raycastAngle);
-            slopeRaycastsL2 = CalculateRayLength(outerRaycastAngle);
+            slopeRaycastsL1 = CalculateRayLength(Stats.PrimaryRaycastAngle);
+            slopeRaycastsL2 = CalculateRayLength(Stats.SecondaryRaycastAngle);
         }
 
         Vector3 FindCentrePoint(List<RaycastHit> hits)
@@ -74,7 +71,9 @@ namespace Templar.TemplarPhysics
 #endif
             UpdateMovementState(CurrentFooting);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
+#if UNITY_EDITOR
             Debug.Log(rb.linearVelocity.magnitude);
+#endif
         }
 
         void Suspension(RaycastHit downHit)
@@ -121,20 +120,18 @@ namespace Templar.TemplarPhysics
         private readonly List<RaycastHit> hits = new();
 
         //More rays will give a more accurate slope direction and grounded detection at the cost of performance
-        private const int numberOfRays = 10;
-        private const int numberOfOuterRays = 4;
-        private const float spacing = 180 / numberOfOuterRays;
         void SlopeDirectionToVelocity()
         {
+            float spacing = 180 / Stats.SecondaryRaysCount;
             Vector3 downslopeVector, surfaceNormal;
 
             raycastDirections.Clear();
             hits.Clear();
-            for (int i = 0; i < numberOfRays; i++)
+            for (int i = 0; i < Stats.PrimaryRaysCount; i++)
             {
-                float angle = i * (360 / numberOfRays);
+                float angle = i * (360 / Stats.PrimaryRaysCount);
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, raycastAngle));
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.PrimaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL1, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
                 if (hit.collider == null) continue;
                 hits.Add(hit);
@@ -145,17 +142,17 @@ namespace Templar.TemplarPhysics
 
             Suspension(downHit);
 
-            for (int i = numberOfRays; i < numberOfRays + numberOfOuterRays; i++)
+            for (int i = Stats.PrimaryRaysCount; i < Stats.PrimaryRaysCount + Stats.SecondaryRaysCount; i++)
             {
                 float angle = i * spacing;
                 Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, outerRaycastAngle));
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.SecondaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
                 if (hit.collider == null) continue;
                 hits.Add(hit);
             }
 
-            surfaceNormal = FindCentrePoint(hits);
+            surfaceNormal = FindCentrePoint(hits).normalized;
             downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
@@ -167,7 +164,7 @@ namespace Templar.TemplarPhysics
 #if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)
             {
-                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(raycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
+                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(Stats.PrimaryRaycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 #endif
         }

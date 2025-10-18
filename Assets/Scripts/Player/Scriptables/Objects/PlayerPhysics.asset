@@ -20,3 +20,10 @@ MonoBehaviour:
   AirResistance: 3
   Gravity: 500
   ControlInAir: 0.5
+  PrimaryRaysCount: 10
+  SecondaryRaysCount: 4
+  PrimaryRaycastAngle: 0.25
+  SecondaryRaycastAngle: 0.5
+  PhysicsLayer:
+    serializedVersion: 2
+    m_Bits: 1

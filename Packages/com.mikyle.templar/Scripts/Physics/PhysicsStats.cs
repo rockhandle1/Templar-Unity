@@ -19,7 +19,7 @@ namespace Templar.TemplarPhysics
         [SerializeField] public float Gravity = 500;
         [SerializeField, Tooltip("Allows the player to move around in the air at a fraction of it's original speed"), Min(0)] public float ControlInAir = 0.5f;
 
-        [Header("Terrain Detection")]
+        [Header("Terrain Detection\n(Cannot be edited at runtime)")]
         [SerializeField, Tooltip("Number of primary (inner) raycasts for terrain detection\n\nMore rays is more accurate at the cost of performance")] public int PrimaryRaysCount = 10;
         [SerializeField, Tooltip("Number of secondary (outer) raycasts for terrain detection\n\nMore rays is more accurate at the cost of performance")] public int SecondaryRaysCount = 4;
         [SerializeField, Tooltip("Angle as a percentage of 90 degrees"), Range(0, 1)] public float PrimaryRaycastAngle = 0.25f;

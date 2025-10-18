@@ -144,8 +144,8 @@ namespace Templar.TemplarPhysics
 
             for (int i = Stats.PrimaryRaysCount; i < Stats.PrimaryRaysCount + Stats.SecondaryRaysCount; i++)
             {
-                float angle = i * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle + 200, 0) * transform.forward;
+                float angle = (i - Stats.PrimaryRaysCount) * spacing;
+                Vector3 direction = Quaternion.Euler(0, (Mathf.Rad2Deg * angle) + 270, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.SecondaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
                 if (hit.collider == null) continue;

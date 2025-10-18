@@ -117,7 +117,7 @@ namespace Templar.TemplarPhysics
         float CalculateRayLength(float angle)
         {
             //Yes, it is intentionally slightly longer than it needs to be to touch a flat ground. why? because sometimes it needs to touch a slope
-            return col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(angle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2));
+            return col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan((angle * 90) * Mathf.Deg2Rad) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2));
         }
 
         private readonly List<Vector3> raycastDirections = new();

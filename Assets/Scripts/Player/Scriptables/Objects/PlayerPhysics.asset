@@ -16,10 +16,12 @@ MonoBehaviour:
   AccelerationFallOff: 0
   Acceleration: 3000
   TopSpeed: -1
-  maxSteepnessThreshold: 0.7
   AirResistance: 3
   Gravity: 500
   ControlInAir: 0.5
+  SlipForce: 10
+  SlipTimer: 0.5
+  maxSteepnessThreshold: 0.7
   PrimaryRaysCount: 10
   SecondaryRaysCount: 4
   PrimaryRaycastAngle: 0.25
@@ -27,3 +29,4 @@ MonoBehaviour:
   PhysicsLayer:
     serializedVersion: 2
     m_Bits: 1
+  GlobalScalar: 1000

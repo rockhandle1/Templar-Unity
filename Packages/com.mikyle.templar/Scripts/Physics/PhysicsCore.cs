@@ -92,7 +92,7 @@ namespace Templar.TemplarPhysics
 
             if (hasCloseHit)
             {
-                if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < 0.5f))
+                if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < Stats.SlipTimer))
                 {
                     slipTimer += Time.fixedDeltaTime;
                     return;
@@ -105,9 +105,13 @@ namespace Templar.TemplarPhysics
                     State = MovementStates.Slipping;
                     return;
                 }
+
+                State = MovementStates.Grounded;
+                return;
             }
 
-            State = hasCloseHit ? MovementStates.Grounded : MovementStates.Falling;
+            State = MovementStates.Falling;
+            slipTimer = 0;
         }
 
         float CalculateRayLength(float angle)
@@ -171,7 +175,7 @@ namespace Templar.TemplarPhysics
 
         void DrawRays(Vector3 downslopeVector, Vector3 forceDirection)
         {
-            Debug.DrawRay(rb.position, forceDirection * (CurrentAcceleration.magnitude / Stats.Acceleration) * 10, Color.blue);
+            Debug.DrawRay(rb.position, (CurrentAcceleration.magnitude / Stats.Acceleration) * 10 * forceDirection, Color.blue);
             Debug.DrawRay(rb.position, downslopeVector * 5.0f, Color.red);
         }
 
@@ -180,8 +184,8 @@ namespace Templar.TemplarPhysics
             //Debug.Log(steepness);
             //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
-            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection * (2 - ((Vector3.Dot(accelerationDirection, unadjustedForceDirection)) / 2));
-            float damping = CurrentVelocity.y * -1 / Stats.AirResistance * 1000;
+            Vector3 acceleration = (2 - ((Vector3.Dot(accelerationDirection, unadjustedForceDirection)) / 2)) * CurrentAcceleration.magnitude * accelerationDirection;
+            float damping = CurrentVelocity.y * -1 / Stats.AirResistance * Stats.GlobalScalar;
             switch (State)
             {
                 case MovementStates.Falling:
@@ -189,17 +193,17 @@ namespace Templar.TemplarPhysics
                     break;
 
                 case MovementStates.Slipping:
-                    acceleration += downslope.normalized * Stats.Gravity * 10;
+                    acceleration += Stats.SlipForce * Stats.Gravity * downslope.normalized;
                     break;
 
                 case MovementStates.Grounded:
-                    damping = CurrentVelocity.y * -1 / 1.5f * 1000;
+                    damping = CurrentVelocity.y * -1 / 1.5f * Stats.GlobalScalar;
                     //acceleration += (-returnedVectors[ReturnVectors.surfaceNormal].normalized * Stats.Gravity * rb.mass);
                     break;
             }
 
             CurrentVelocity = rb.linearVelocity;
-            counterVelocity = -CurrentVelocity / Stats.AirResistance * 1000;
+            counterVelocity = -CurrentVelocity / Stats.AirResistance * Stats.GlobalScalar;
             counterVelocity.y = damping;
             //counterVelocity = CurrentVelocity * -1 / (Stats.AirResistance / (1 + (State == MovementStates.Falling || State == MovementStates.Slipping ? 1 : 0))) * 1000;
             rb.AddForce((acceleration + counterVelocity) * deltaTime, ForceMode.Acceleration);

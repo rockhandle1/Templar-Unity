@@ -12,21 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3006d2a7e03e75d43b2158ebe8704bf8, type: 3}
   m_Name: PlayerPhysics
   m_EditorClassIdentifier: 
-  SuspensionDistance: 1
-  AccelerationFallOff: 0
-  Acceleration: 3000
-  TopSpeed: -1
-  AirResistance: 3
-  Gravity: 500
-  ControlInAir: 0.5
-  SlipForce: 10
-  SlipTimer: 0.5
-  maxSteepnessThreshold: 0.7
-  PrimaryRaysCount: 10
-  SecondaryRaysCount: 4
-  PrimaryRaycastAngle: 0.25
-  SecondaryRaycastAngle: 0.5
-  PhysicsLayer:
+  <SuspensionDistance>k__BackingField: 1
+  <SpringForce>k__BackingField: 5200
+  <Damping>k__BackingField: 1.5
+  <AccelerationFallOff>k__BackingField: 0
+  <Acceleration>k__BackingField: 3000
+  <TopSpeed>k__BackingField: -1
+  <AirResistance>k__BackingField: 3
+  <Gravity>k__BackingField: 500
+  <ControlInAir>k__BackingField: 0.5
+  <SlipForce>k__BackingField: 10
+  <SlipTimer>k__BackingField: 0.5
+  <MaxSteepnessThreshold>k__BackingField: 0.7
+  <PrimaryRaysCount>k__BackingField: 10
+  <SecondaryRaysCount>k__BackingField: 4
+  <PrimaryRaycastAngle>k__BackingField: 0.25
+  <SecondaryRaycastAngle>k__BackingField: 0.5
+  <PhysicsLayer>k__BackingField:
     serializedVersion: 2
     m_Bits: 1
-  GlobalScalar: 1000
+  <GlobalScalar>k__BackingField: 1000
+  <SlopeJitterPrevention>k__BackingField: 0.5

@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 
 namespace Templar.TemplarPhysics
 {
@@ -57,14 +56,12 @@ namespace Templar.TemplarPhysics
         }
 
         Vector3 forceDirection;
-        Vector3 unadjustedForceDirection;
         Dictionary<ReturnVectors, Vector3> returnedVectors = new();
         void FixedUpdate()
         {
             returnedVectors.Clear();
             SlopeDirectionToVelocity();
-            unadjustedForceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
-            forceDirection = Vector3.Lerp(unadjustedForceDirection, -returnedVectors[ReturnVectors.surfaceNormal].normalized, 0.25f);
+            forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
 
 #if UNITY_EDITOR
             DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
@@ -72,15 +69,18 @@ namespace Templar.TemplarPhysics
             UpdateMovementState(CurrentFooting);
             VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
 #if UNITY_EDITOR
-            Debug.Log(rb.linearVelocity.magnitude);
+            //Debug.Log(rb.linearVelocity.magnitude);
 #endif
         }
 
         void Suspension(RaycastHit downHit)
         {
-            if (downHit.distance < Stats.SuspensionDistance)
+            if (transform.position.y - downHit.point.y < Stats.SuspensionDistance)
             {
-                rb.linearVelocity += Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 2;
+                float compression = Stats.SuspensionDistance - downHit.distance;
+                float appliedForce = Stats.SpringForce * compression;
+                rb.AddForce(Vector3.up * appliedForce * Time.deltaTime, ForceMode.Acceleration);
+                //rb.linearVelocity += Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 2;
                 //rb.AddForce(Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 50, ForceMode.Acceleration);
             }
         }
@@ -92,7 +92,7 @@ namespace Templar.TemplarPhysics
 
             if (hasCloseHit)
             {
-                if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.maxSteepnessThreshold || slipTimer < Stats.SlipTimer))
+                if (State == MovementStates.Slipping && (steepness > 0.7f * Stats.MaxSteepnessThreshold || slipTimer < Stats.SlipTimer))
                 {
                     slipTimer += Time.fixedDeltaTime;
                     return;
@@ -100,7 +100,7 @@ namespace Templar.TemplarPhysics
 
                 slipTimer = 0;
 
-                if (steepness > Stats.maxSteepnessThreshold)
+                if (steepness > Stats.MaxSteepnessThreshold)
                 {
                     State = MovementStates.Slipping;
                     return;
@@ -157,7 +157,7 @@ namespace Templar.TemplarPhysics
             }
 
             surfaceNormal = FindCentrePoint(hits).normalized;
-            downslopeVector = Vector3.ProjectOnPlane(-Vector3.up, surfaceNormal);
+            downslopeVector = Vector3.ProjectOnPlane(Vector3.down, surfaceNormal);
 
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
@@ -184,7 +184,7 @@ namespace Templar.TemplarPhysics
             //Debug.Log(steepness);
             //Debug.Log(State);
             float inputAmount = CurrentAcceleration.magnitude / Stats.Acceleration;
-            Vector3 acceleration = (2 - ((Vector3.Dot(accelerationDirection, unadjustedForceDirection)) / 2)) * CurrentAcceleration.magnitude * accelerationDirection;
+            Vector3 acceleration = CurrentAcceleration.magnitude * accelerationDirection;
             float damping = CurrentVelocity.y * -1 / Stats.AirResistance * Stats.GlobalScalar;
             switch (State)
             {
@@ -197,7 +197,14 @@ namespace Templar.TemplarPhysics
                     break;
 
                 case MovementStates.Grounded:
-                    damping = CurrentVelocity.y * -1 / 1.5f * Stats.GlobalScalar;
+                    damping = CurrentVelocity.y * -1 / Stats.Damping * Stats.GlobalScalar;
+                    float stickToSlope;
+                    if ((stickToSlope = Vector3.Dot(rb.linearVelocity.normalized, downslope.normalized)) > 0)
+                    {
+                        //acceleration *= 1 + stickToSlope + Stats.SlopeJitterPrevention;
+                        //acceleration += -returnedVectors[ReturnVectors.surfaceNormal].normalized * stickToSlope * rb.linearVelocity.magnitude * Stats.GlobalScalar * Stats.SlopeJitterPrevention;
+                        acceleration += Vector3.down * stickToSlope * rb.linearVelocity.magnitude * Stats.GlobalScalar * Stats.SlopeJitterPrevention;
+                    }
                     //acceleration += (-returnedVectors[ReturnVectors.surfaceNormal].normalized * Stats.Gravity * rb.mass);
                     break;
             }

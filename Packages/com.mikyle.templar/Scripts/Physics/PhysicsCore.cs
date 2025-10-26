@@ -123,13 +123,13 @@ namespace Templar.TemplarPhysics
             return hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f;
         }
 
-        void ExtractSurfaceInfo(int startingValue, int count, float spacing, float castAngle, float rayLength)
+        void ExtractSurfaceInfo(int startingValue, int count, float spacing, float castAngle, float rayLength, int angleOffset)
         {
             float cachedValue = startingValue;
             for (; startingValue < count; startingValue++)
             {
                 float angle = (startingValue - cachedValue) * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
+                Vector3 direction = Quaternion.Euler(0, angle + angleOffset, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, castAngle));
                 Physics.Raycast(rb.position, raycastDirections[startingValue], out RaycastHit hit, rayLength, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
                 if (ValidateHit(hit)) continue;
@@ -149,7 +149,7 @@ namespace Templar.TemplarPhysics
             hits.Clear();
 
             //Primary rays
-            ExtractSurfaceInfo(0, Stats.PrimaryRaysCount, 360 / Stats.PrimaryRaysCount, Stats.PrimaryRaycastAngle, slopeRaycastsL1);
+            ExtractSurfaceInfo(0, Stats.PrimaryRaysCount, 360 / Stats.PrimaryRaysCount, Stats.PrimaryRaycastAngle, slopeRaycastsL1, 0);
 
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
             if (downHit.collider != null) hits.Add(downHit);
@@ -157,7 +157,7 @@ namespace Templar.TemplarPhysics
             Suspension(downHit);
 
             //Secondary rays
-            ExtractSurfaceInfo(Stats.PrimaryRaysCount, Stats.PrimaryRaysCount + Stats.SecondaryRaysCount, 180 / Stats.SecondaryRaysCount, Stats.SecondaryRaycastAngle, slopeRaycastsL2);
+            ExtractSurfaceInfo(Stats.PrimaryRaysCount, Stats.PrimaryRaysCount + Stats.SecondaryRaysCount, 180 / Stats.SecondaryRaysCount, Stats.SecondaryRaycastAngle, slopeRaycastsL2, 290);
 
             surfaceNormal = FindCentrePoint(hits).normalized;
             downslopeVector = Vector3.ProjectOnPlane(Vector3.down, surfaceNormal);

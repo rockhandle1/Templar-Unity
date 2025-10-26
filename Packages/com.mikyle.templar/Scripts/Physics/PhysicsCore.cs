@@ -123,41 +123,41 @@ namespace Templar.TemplarPhysics
             return hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f;
         }
 
+        void ExtractSurfaceInfo(int startingValue, int count, float spacing, float castAngle, float rayLength)
+        {
+            float cachedValue = startingValue;
+            for (; startingValue < count; startingValue++)
+            {
+                float angle = (startingValue - cachedValue) * spacing;
+                Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
+                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, castAngle));
+                Physics.Raycast(rb.position, raycastDirections[startingValue], out RaycastHit hit, rayLength, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
+                if (ValidateHit(hit)) continue;
+                hits.Add(hit);
+            }
+        }
+
         private readonly List<Vector3> raycastDirections = new();
         private readonly List<RaycastHit> hits = new();
 
         //More rays will give a more accurate slope direction and grounded detection at the cost of performance
         void SlopeDirectionToVelocity()
         {
-            float spacing = 180 / Stats.SecondaryRaysCount;
             Vector3 downslopeVector, surfaceNormal;
 
             raycastDirections.Clear();
             hits.Clear();
-            for (int i = 0; i < Stats.PrimaryRaysCount; i++)
-            {
-                float angle = i * (360 / Stats.PrimaryRaysCount);
-                Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.PrimaryRaycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL1, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
-                if (ValidateHit(hit)) continue;
-                hits.Add(hit);
-            }
+
+            //Primary rays
+            ExtractSurfaceInfo(0, Stats.PrimaryRaysCount, 360 / Stats.PrimaryRaysCount, Stats.PrimaryRaycastAngle, slopeRaycastsL1);
 
             Physics.Raycast(rb.position, Vector3.down, out RaycastHit downHit, col.bounds.extents.y + Stats.SuspensionDistance, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
             if (downHit.collider != null) hits.Add(downHit);
 
             Suspension(downHit);
 
-            for (int i = Stats.PrimaryRaysCount; i < Stats.PrimaryRaysCount + Stats.SecondaryRaysCount; i++)
-            {
-                float angle = (i - Stats.PrimaryRaysCount) * spacing;
-                Vector3 direction = Quaternion.Euler(0, angle + 290, 0) * transform.forward;
-                raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.SecondaryRaycastAngle));
-                Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
-                if (ValidateHit(hit)) continue;
-                hits.Add(hit);
-            }
+            //Secondary rays
+            ExtractSurfaceInfo(Stats.PrimaryRaysCount, Stats.PrimaryRaysCount + Stats.SecondaryRaysCount, 180 / Stats.SecondaryRaysCount, Stats.SecondaryRaycastAngle, slopeRaycastsL2);
 
             surfaceNormal = FindCentrePoint(hits).normalized;
             downslopeVector = Vector3.ProjectOnPlane(Vector3.down, surfaceNormal);

@@ -13,7 +13,7 @@ namespace Templar.Player
         Rigidbody _rb;
         Vector3 camDirection;
         Vector3 axisAcceleration;
-        bool _rotationEnabled;
+        bool _rotationEnabled = true;
         public bool RotationActive { get => _rotationEnabled; set => _rotationEnabled = value; }
         public Camera GameCamera { get => _gameCamera; set => _gameCamera = value; }
         public float RotationSpeed { get => _rotationSpeed; set => _rotationSpeed = value; }

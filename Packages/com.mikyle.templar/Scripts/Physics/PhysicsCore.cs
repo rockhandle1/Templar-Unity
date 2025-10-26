@@ -42,9 +42,6 @@ namespace Templar.TemplarPhysics
 
             foreach (RaycastHit hit in hits)
             {
-                //Reject vector if it is a wall. Fixes player being able to climb walls
-                if (Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f) continue;
-
                 float distance = Vector3.Distance(transform.position, hit.point);
                 float weight = 1 / (distance + 1);
 
@@ -75,7 +72,7 @@ namespace Templar.TemplarPhysics
         void Suspension(RaycastHit downHit)
         {
             float distanceToGround = transform.position.y - downHit.point.y;
-            if (distanceToGround < Stats.SuspensionDistance && State == MovementStates.Grounded)
+            if (distanceToGround < Stats.SuspensionDistance && State != MovementStates.Falling)
             {
                 float compression = Stats.SuspensionDistance - distanceToGround;
                 float appliedForce = Stats.SpringForce * compression;
@@ -120,6 +117,12 @@ namespace Templar.TemplarPhysics
             return col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan((angle * 90) * Mathf.Deg2Rad) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2));
         }
 
+        bool ValidateHit(RaycastHit hit)
+        {
+            //Reject vector if it is a wall. Fixes player being able to climb walls
+            return hit.collider == null || Vector3.Dot(Vector3.up, -Vector3.ProjectOnPlane(Vector3.down, hit.normal).normalized) > 0.95f;
+        }
+
         private readonly List<Vector3> raycastDirections = new();
         private readonly List<RaycastHit> hits = new();
 
@@ -137,7 +140,7 @@ namespace Templar.TemplarPhysics
                 Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.PrimaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL1, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
-                if (hit.collider == null) continue;
+                if (ValidateHit(hit)) continue;
                 hits.Add(hit);
             }
 
@@ -152,7 +155,7 @@ namespace Templar.TemplarPhysics
                 Vector3 direction = Quaternion.Euler(0, angle + 290, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.SecondaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
-                if (hit.collider == null) continue;
+                if (ValidateHit(hit)) continue;
                 hits.Add(hit);
             }
 

@@ -16,7 +16,7 @@ namespace Templar.TemplarPhysics
 
         Vector3 counterVelocity;
 
-        [SerializeField] public PhysicsStats Stats;
+        public PhysicsStats Stats;
 
         [HideInInspector] public Vector3 CurrentAcceleration { get; set; }
 
@@ -56,18 +56,17 @@ namespace Templar.TemplarPhysics
         }
 
         Vector3 forceDirection;
-        Dictionary<ReturnVectors, Vector3> returnedVectors = new();
+        SurfaceTraits surfaceTraits = new();
         void FixedUpdate()
         {
-            returnedVectors.Clear();
             SlopeDirectionToVelocity();
-            forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, returnedVectors[ReturnVectors.surfaceNormal]);
+            forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, surfaceTraits.surfaceNormal);
 
 #if UNITY_EDITOR
-            DrawRays(returnedVectors[ReturnVectors.downslopeVector], forceDirection);
+            DrawRays(surfaceTraits.downslopeVector, forceDirection);
 #endif
             UpdateMovementState(CurrentFooting);
-            VelocityUpdate(Time.fixedDeltaTime, forceDirection, returnedVectors[ReturnVectors.downslopeVector]);
+            VelocityUpdate(Time.fixedDeltaTime, forceDirection, surfaceTraits.downslopeVector);
 #if UNITY_EDITOR
             //Debug.Log(rb.linearVelocity.magnitude);
 #endif
@@ -75,11 +74,12 @@ namespace Templar.TemplarPhysics
 
         void Suspension(RaycastHit downHit)
         {
-            if (transform.position.y - downHit.point.y < Stats.SuspensionDistance)
+            float distanceToGround = transform.position.y - downHit.point.y;
+            if (distanceToGround < Stats.SuspensionDistance && State == MovementStates.Grounded)
             {
-                float compression = Stats.SuspensionDistance - downHit.distance;
+                float compression = Stats.SuspensionDistance - distanceToGround;
                 float appliedForce = Stats.SpringForce * compression;
-                rb.AddForce(Vector3.up * appliedForce * Time.deltaTime, ForceMode.Acceleration);
+                rb.AddForce(Vector3.up * appliedForce * Time.fixedDeltaTime, ForceMode.Acceleration);
                 //rb.linearVelocity += Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 2;
                 //rb.AddForce(Vector3.up * Stats.SuspensionDistance * (downHit.distance / Stats.SuspensionDistance) * 50, ForceMode.Acceleration);
             }
@@ -149,7 +149,7 @@ namespace Templar.TemplarPhysics
             for (int i = Stats.PrimaryRaysCount; i < Stats.PrimaryRaysCount + Stats.SecondaryRaysCount; i++)
             {
                 float angle = (i - Stats.PrimaryRaysCount) * spacing;
-                Vector3 direction = Quaternion.Euler(0, (Mathf.Rad2Deg * angle) + 270, 0) * transform.forward;
+                Vector3 direction = Quaternion.Euler(0, angle + 290, 0) * transform.forward;
                 raycastDirections.Add(Vector3.Lerp(Vector3.down, direction, Stats.SecondaryRaycastAngle));
                 Physics.Raycast(rb.position, raycastDirections[i], out RaycastHit hit, slopeRaycastsL2, Stats.PhysicsLayer, QueryTriggerInteraction.Ignore);
                 if (hit.collider == null) continue;
@@ -162,8 +162,8 @@ namespace Templar.TemplarPhysics
             steepness = Vector3.Dot(Vector3.up, -downslopeVector.normalized);
 
             
-            returnedVectors[ReturnVectors.downslopeVector] = downslopeVector;
-            returnedVectors[ReturnVectors.surfaceNormal] = surfaceNormal;
+            surfaceTraits.downslopeVector = downslopeVector;
+            surfaceTraits.surfaceNormal = surfaceNormal;
 
 #if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)

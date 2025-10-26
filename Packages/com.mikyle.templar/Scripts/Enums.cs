@@ -19,12 +19,9 @@ namespace Templar.TemplarPhysics
         Falling
     }
 
-    public partial class PhysicsCore : MonoBehaviour
+    internal struct SurfaceTraits
     {
-        private enum ReturnVectors
-        {
-            downslopeVector,
-            surfaceNormal
-        }
+        public Vector3 downslopeVector;
+        public Vector3 surfaceNormal;
     }
 }

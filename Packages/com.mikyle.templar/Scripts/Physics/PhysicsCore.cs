@@ -56,7 +56,7 @@ namespace Templar.TemplarPhysics
         SurfaceTraits surfaceTraits = new();
         void FixedUpdate()
         {
-            SlopeDirectionToVelocity();
+            DetermineSurfaceTraits();
             forceDirection = Vector3.ProjectOnPlane(CurrentAcceleration.normalized, surfaceTraits.surfaceNormal);
 
 #if UNITY_EDITOR
@@ -141,7 +141,7 @@ namespace Templar.TemplarPhysics
         private readonly List<RaycastHit> hits = new();
 
         //More rays will give a more accurate slope direction and grounded detection at the cost of performance
-        void SlopeDirectionToVelocity()
+        void DetermineSurfaceTraits()
         {
             Vector3 downslopeVector, surfaceNormal;
 
@@ -171,7 +171,7 @@ namespace Templar.TemplarPhysics
 #if UNITY_EDITOR
             foreach (Vector3 raycastDirection in raycastDirections)
             {
-                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(Stats.PrimaryRaycastAngle * 90) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
+                Debug.DrawRay(rb.position, raycastDirection * (col.bounds.extents.y + Mathf.Sqrt(Mathf.Pow(Mathf.Tan(Stats.PrimaryRaycastAngle * 90 * Mathf.Deg2Rad) * Stats.SuspensionDistance, 2) + Mathf.Pow(Stats.SuspensionDistance, 2))), Color.yellow);
             }
 #endif
         }
